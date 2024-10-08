@@ -1,9 +1,13 @@
 package gui.main;
 
 import java.awt.BorderLayout;
+import java.awt.event.KeyEvent;
 
 import javax.swing.JFrame;
 import javax.swing.JList;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -33,6 +37,9 @@ public class MainWindow extends JFrame {
 		setTitle("JJ.OO. Paris 2024"); // título de la ventana
 		setSize(640, 480); // tamaño inicial
 		setLocationRelativeTo(null); // situa la ventana en el centro de la pantalla
+		
+		// creamos el menu de la ventana
+		createWindowMenu();
 
 		// instanciamos y añadimos un JList en la parte WEST del BorderLayout
 		// usamos un JScrollPane para permitir el scroll vertical
@@ -49,5 +56,39 @@ public class MainWindow extends JFrame {
 		add(jTabbedPane, BorderLayout.CENTER);
 		
 		setVisible(true); // hacemos visible la ventana
+	}
+	
+	// método para crear el menú de la ventana
+	private void createWindowMenu() {
+		// creamos la barra principal y asignamos a la ventana
+		JMenuBar jMenuBar = new JMenuBar();
+		setJMenuBar(jMenuBar);
+		
+		// creamos el menú "Fichero"
+		JMenu fileMenu = new JMenu("Fichero");
+		fileMenu.setMnemonic(KeyEvent.VK_F);
+		
+		// creamos los items del menu
+		JMenuItem newAhtleteMenuItem = new JMenuItem("Nuevo atleta...");
+		newAhtleteMenuItem.setMnemonic(KeyEvent.VK_N);
+		fileMenu.add(newAhtleteMenuItem);
+		
+		fileMenu.addSeparator();
+		
+		JMenuItem importMenuItem = new JMenuItem("Importar...");
+		importMenuItem.setMnemonic(KeyEvent.VK_I);
+		fileMenu.add(importMenuItem);
+		
+		JMenuItem exportMenuItem = new JMenuItem("Exportar...");
+		exportMenuItem.setMnemonic(KeyEvent.VK_E);
+		fileMenu.add(exportMenuItem);
+		
+		fileMenu.addSeparator();
+		
+		JMenuItem exitMenuItem = new JMenuItem("Salir");
+		exitMenuItem.setMnemonic(KeyEvent.VK_S);
+		fileMenu.add(exitMenuItem);
+		
+		jMenuBar.add(fileMenu);
 	}
 }
