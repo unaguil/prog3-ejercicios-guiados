@@ -72,6 +72,7 @@ public class MainWindow extends JFrame {
 		// usamos un JScrollPane para permitir el scroll vertical	
 		jListAthletes = new JList<Athlete>(jListModelAthletes);
 		jListAthletes.setFixedCellWidth(200); // anchura fija del JList
+		jListAthletes.setCellRenderer(new AthleteListCellRenderer());
 
 		JScrollPane scrollJListAthletes = new JScrollPane(jListAthletes);
 		add(scrollJListAthletes, BorderLayout.WEST); // añadimos el scroll a la ventana
