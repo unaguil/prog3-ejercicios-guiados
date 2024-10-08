@@ -4,7 +4,10 @@ import java.awt.BorderLayout;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.time.LocalDate;
+import java.util.List;
 
+import javax.swing.DefaultListModel;
 import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JMenu;
@@ -14,6 +17,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+
+import domain.Athlete;
+import domain.Athlete.Genre;
 
 /**
  * Ventana principal de la aplicación.
@@ -25,13 +31,15 @@ public class MainWindow extends JFrame {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	private String[] sampleAthletes = new String[] { "Atleta 1", "Atleta 2", "Atleta 3", "Atleta 4", "Atleta 5",
-			"Atleta 6", "Atleta 7", "Atleta 8", "Atleta 9", "Atleta 10", "Atleta 11", "Atleta 12", "Atleta 13",
-			"Atleta 14", "Atleta 15", "Atleta 16", "Atleta 17", "Atleta 18", "Atleta 19", "Atleta 20", "Atleta 21",
-			"Atleta 22", "Atleta 23", "Atleta 24", "Atleta 25", "Atleta 26", "Atleta 27", "Atleta 28", "Atleta 29",
-			"Atleta 30" };
+	private List<Athlete> sampleAthletes = List.of(
+		new Athlete(1111111, "Apellido, Nombre 1", Genre.FEMALE, "Country 1", LocalDate.of(1990, 12, 15)),
+		new Athlete(2222222, "Apellido, Nombre 2", Genre.FEMALE, "Country 2", LocalDate.of(1995, 5, 20)),
+		new Athlete(3333333, "Apellido, Nombre 3", Genre.MALE, "Country 1", LocalDate.of(1993, 1, 30)),
+		new Athlete(4444444, "Apellido, Nombre 4", Genre.MALE, "Country 3", LocalDate.of(1994, 3, 29)),
+		new Athlete(5555555, "Apellido, Nombre 5", Genre.FEMALE, "Country 4", LocalDate.of(1998, 7, 9))
+	);
 
-	private JList<String> jListAthletes; // referencia al JList de atletas
+	private JList<Athlete> jListAthletes; // referencia al JList de atletas
 
 	public MainWindow() {
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE); // comportamiento al cerrar
@@ -54,13 +62,18 @@ public class MainWindow extends JFrame {
 
 		// creamos el menu de la ventana
 		createWindowMenu();
+		
+		// creamos un modelo de datos para instancias Athlete que son las que maneja
+		// la aplicación, así nos evitamos convertir de Athlete a String y viceversa
+		DefaultListModel<Athlete> jListModelAthletes = new DefaultListModel<Athlete>();
+		jListModelAthletes.addAll(sampleAthletes);
 
 		// instanciamos y añadimos un JList en la parte WEST del BorderLayout
-		// usamos un JScrollPane para permitir el scroll vertical
-		jListAthletes = new JList<String>(sampleAthletes);
+		// usamos un JScrollPane para permitir el scroll vertical	
+		jListAthletes = new JList<Athlete>(jListModelAthletes);
 		jListAthletes.setFixedCellWidth(200); // anchura fija del JList
-		
-		JScrollPane scrollJListAthletes = new JScrollPane(jListAthletes);		
+
+		JScrollPane scrollJListAthletes = new JScrollPane(jListAthletes);
 		add(scrollJListAthletes, BorderLayout.WEST); // añadimos el scroll a la ventana
 
 		// añadimos un JTabbedPane con dos tabs a la zona central del BorderLayout
