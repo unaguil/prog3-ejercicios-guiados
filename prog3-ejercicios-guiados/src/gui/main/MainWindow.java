@@ -38,8 +38,11 @@ public class MainWindow extends JFrame {
 		new Athlete(4444444, "Apellido, Nombre 4", Genre.MALE, "Country 3", LocalDate.of(1994, 3, 29)),
 		new Athlete(5555555, "Apellido, Nombre 5", Genre.FEMALE, "Country 4", LocalDate.of(1998, 7, 9))
 	);
+	
+	private List<String> countries = List.of("Country 1", "Country 2", "Country 3", "Country 4");
 
 	private JList<Athlete> jListAthletes; // referencia al JList de atletas
+	private AthleteFormPanel formAthletes; // referencia al formulario (JPanel) de atletas
 
 	public MainWindow() {
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE); // comportamiento al cerrar
@@ -73,13 +76,33 @@ public class MainWindow extends JFrame {
 		jListAthletes = new JList<Athlete>(jListModelAthletes);
 		jListAthletes.setFixedCellWidth(200); // anchura fija del JList
 		jListAthletes.setCellRenderer(new AthleteListCellRenderer());
+		
+		// registramos un escuchador en la lista para actualizar el panel de la derecha
+		// con el atleta seleccionado en cada momento
+		// podemos usar una expresión lambda ya que la interfaz ListSelectionListener
+		// es funcional 
+		jListAthletes.addListSelectionListener(e -> {
+			// solamente vamos a procesar el último evento de la selección en el JList
+			// esto evita procesar dos veces cada selección de items
+			if (!e.getValueIsAdjusting()) {
+				// obtenemos el atleta seleccionado del JList
+				Athlete selectedAthlete = jListAthletes.getSelectedValue();
+				// lo mostramos en el formulario de la derecha
+				formAthletes.setAthlete(selectedAthlete);
+			}
+		});
 
 		JScrollPane scrollJListAthletes = new JScrollPane(jListAthletes);
 		add(scrollJListAthletes, BorderLayout.WEST); // añadimos el scroll a la ventana
 
 		// añadimos un JTabbedPane con dos tabs a la zona central del BorderLayout
 		JTabbedPane jTabbedPane = new JTabbedPane();
-		jTabbedPane.addTab("Datos", new JPanel());
+		
+		// añadimos el formulario de atletas al panel de la derecha en "Datos"
+		formAthletes = new AthleteFormPanel(countries);
+		formAthletes.setEditable(false); // formulario en modo no editable
+		jTabbedPane.addTab("Datos", formAthletes);
+		
 		jTabbedPane.addTab("Medallas", new JPanel());
 		add(jTabbedPane, BorderLayout.CENTER);
 
