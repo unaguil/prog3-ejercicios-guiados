@@ -135,31 +135,49 @@ public class AthleteFormPanel extends JPanel {
 
 	/**
 	 * Establece el atleta cuyos datos se visualizan en el formulario.
+	 * Si el atleta es null, el formulario se queda en blanco
 	 * 
 	 * @param athlete atleta cuyos datos se visualizan en el formulario
 	 */
 	public void setAthlete(Athlete athlete) {
-		// rellenamos los campos con los datos del atleta
-		codeTextField.setText(Integer.toString(athlete.getCode()));
-		nameTextField.setText(athlete.getName());
-
-		// convertimos la fecha al formato especificado para visualizar en el form
-		birthDateTextField.setText(athlete.getBirthdate().format(dateFormatter));
-
-		// seleccionamos el radio button según el género del atleta
-		switch (athlete.getGenre()) {
-		case MALE:
-			maleRadioButton.setSelected(true);
-			break;
-
-		case FEMALE:
-			femaleRadioButton.setSelected(true);
-			break;
+		if (athlete == null) {
+			clear();
+		} else {
+			// rellenamos los campos con los datos del atleta
+			codeTextField.setText(Integer.toString(athlete.getCode()));
+			nameTextField.setText(athlete.getName());
+	
+			// convertimos la fecha al formato especificado para visualizar en el form
+			birthDateTextField.setText(athlete.getBirthdate().format(dateFormatter));
+	
+			// seleccionamos el radio button según el género del atleta
+			switch (athlete.getGenre()) {
+			case MALE:
+				maleRadioButton.setSelected(true);
+				break;
+	
+			case FEMALE:
+				femaleRadioButton.setSelected(true);
+				break;
+			}
+	
+			// seleccionamos el país del desplegable según el del atleta
+			countryComboBox.setSelectedItem(athlete.getCountry());
 		}
-
-		// seleccionamos el país del desplegable según el del atleta
-		countryComboBox.setSelectedItem(athlete.getCountry());
-	} 
+	}
+	
+	/**
+	 * Limpia todos los campos del formulario y
+	 * selecciona el primer país del JComboBox
+	 */
+	public void clear() {
+		codeTextField.setText("");
+		nameTextField.setText("");
+		birthDateTextField.setText("");
+		maleRadioButton.setSelected(false);
+		femaleRadioButton.setSelected(false);
+		countryComboBox.setSelectedIndex(0);
+	}
 
 	/**
 	 * Obtiene un nuevo atleta a partir de los datos del formulario.
