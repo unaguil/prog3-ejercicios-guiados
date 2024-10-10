@@ -41,6 +41,7 @@ public class MainWindow extends JFrame {
 	
 	private List<String> countries = List.of("Country 1", "Country 2", "Country 3", "Country 4");
 
+	private DefaultListModel<Athlete> jListModelAthletes; // referencia al modelo de datos de la lista
 	private JList<Athlete> jListAthletes; // referencia al JList de atletas
 	private AthleteFormPanel formAthletes; // referencia al formulario (JPanel) de atletas
 
@@ -68,7 +69,7 @@ public class MainWindow extends JFrame {
 		
 		// creamos un modelo de datos para instancias Athlete que son las que maneja
 		// la aplicación, así nos evitamos convertir de Athlete a String y viceversa
-		DefaultListModel<Athlete> jListModelAthletes = new DefaultListModel<Athlete>();
+		jListModelAthletes = new DefaultListModel<Athlete>();
 		jListModelAthletes.addAll(sampleAthletes);
 
 		// instanciamos y añadimos un JList en la parte WEST del BorderLayout
@@ -122,6 +123,22 @@ public class MainWindow extends JFrame {
 		// creamos los items del menu
 		JMenuItem newAhtleteMenuItem = new JMenuItem("Nuevo atleta...");
 		newAhtleteMenuItem.setMnemonic(KeyEvent.VK_N);
+		// abrimos el cuadro de diálogo de nuevo atleta y
+		// procesamos el resultado de la operación
+		newAhtleteMenuItem.addActionListener(event -> {
+			NewAthleteDialog newAthleteDialog = new NewAthleteDialog(countries);
+			int result = newAthleteDialog.showDialog(this);
+			if (result == JOptionPane.OK_OPTION) {
+				// si el usuario ha pulsado la opción guardar
+				// obtenemos el nuevo atleta y lo añadimos a la lista de atletas
+				try {
+					jListModelAthletes.addElement(newAthleteDialog.getAhtlete());
+				} catch (FormDataNotValid e) {
+					// no hacemos nada porque sabemos que el atleta debe
+					// ser válido en este punto
+				}
+			}
+		});
 		fileMenu.add(newAhtleteMenuItem);
 
 		fileMenu.addSeparator();
