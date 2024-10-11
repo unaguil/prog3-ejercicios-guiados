@@ -1,6 +1,7 @@
 package gui.main;
 
 import java.util.Collections;
+import java.time.LocalDate;
 import java.util.List;
 
 import javax.swing.table.AbstractTableModel;
@@ -62,8 +63,19 @@ public class MedalsTableModel extends AbstractTableModel {
 			default: return null;
 		}
 	}
+		
+	@Override
+	public Class<?> getColumnClass(int columnIndex) {
+		// indica el tipo de cada columna de datos
+		// puede ser usado por renderers o editors
+		switch (columnIndex) {
+			case 0: return Medal.Metal.class;
+			case 1: return LocalDate.class;
+			case 2: return String.class;
+			default: return null;
+		}
+	}
 
-	
 	/**
 	 * Actualiza la lista de medallas del modelo de datos y
 	 * notifica al JTable asociado para que se actualice
