@@ -1,5 +1,6 @@
 package gui.main;
 
+import java.util.Collections;
 import java.util.List;
 
 import javax.swing.table.AbstractTableModel;
@@ -26,11 +27,9 @@ public class MedalsTableModel extends AbstractTableModel {
 	
 	/**
 	 * Constructor que recibe los datos del modelo
-	 * @param medals lista de medallas con los datos mostrar en
-	 * la tabla
 	 */
-	public MedalsTableModel(List<Medal> medals) {
-		this.medals = medals;
+	public MedalsTableModel() {
+		this.medals = Collections.emptyList();
 	}
 
 	@Override

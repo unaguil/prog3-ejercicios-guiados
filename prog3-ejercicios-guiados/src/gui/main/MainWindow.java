@@ -172,7 +172,7 @@ public class MainWindow extends JFrame {
 	// crea el panel que contiene el JTable de medallas
 	private JComponent createMedalPanel() {
 		// creamos el modelo de datos de la tabla
-		medalsTableModel = new MedalsTableModel(Collections.emptyList());
+		medalsTableModel = new MedalsTableModel();
 		// creamos la tabla de medallas y le asignamos el modelo de datos
 		medalsJTable = new JTable(medalsTableModel);
 
