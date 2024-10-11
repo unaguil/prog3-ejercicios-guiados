@@ -5,10 +5,13 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JMenu;
@@ -18,9 +21,12 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTable;
 
 import domain.Athlete;
 import domain.Athlete.Genre;
+import domain.Medal;
+import domain.Medal.Metal;
 
 /**
  * Ventana principal de la aplicación.
@@ -42,10 +48,26 @@ public class MainWindow extends JFrame {
 	
 	private List<String> countries = List.of("Country 1", "Country 2", "Country 3", "Country 4");
 
+	private Map<Integer, List<Medal>> medalsPerAthlete = Map.of(sampleAthletes.get(0).getCode(),
+			List.of(new Medal(Metal.SILVER, LocalDate.of(2024, 7, 29), sampleAthletes.get(0), "Discipline 1"),
+					new Medal(Metal.GOLD, LocalDate.of(2024, 7, 30), sampleAthletes.get(0), "Discipline 2")
+			),
+			sampleAthletes.get(1).getCode(),
+			List.of(new Medal(Metal.BRONZE, LocalDate.of(2024, 7, 29), sampleAthletes.get(1), "Discipline 1"),
+					new Medal(Metal.GOLD, LocalDate.of(2024, 8, 2), sampleAthletes.get(1), "Discipline 3")
+			),
+			sampleAthletes.get(2).getCode(),
+			List.of(new Medal(Metal.SILVER, LocalDate.of(2024, 8, 5), sampleAthletes.get(2), "Discipline 4")
+			)
+	);
+
 	private DefaultListModel<Athlete> jListModelAthletes; // referencia al modelo de datos de la lista
 	private JList<Athlete> jListAthletes; // referencia al JList de atletas
 	private AthleteFormPanel formAthletes; // referencia al formulario (JPanel) de atletas
 	private JButton removeAthletesButton; // referencia al botón de eliminar athletas
+	
+	private MedalsTableModel medalsTableModel; // referencia al modelo de datos de la tabla
+	private JTable medalsJTable; // referencia a la tabla de medallas
 
 	public MainWindow() {
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE); // comportamiento al cerrar
@@ -92,6 +114,12 @@ public class MainWindow extends JFrame {
 				Athlete selectedAthlete = jListAthletes.getSelectedValue();
 				// lo mostramos en el formulario de la derecha
 				formAthletes.setAthlete(selectedAthlete);
+				
+				// establecemos también los datos a mostrar en la tabla de medallas
+				// obteniendo la lista de medallas del atleta seleccionado del mapa
+				// si el atleta no tiene medallas usamos una lista vacía
+				List<Medal> medals = medalsPerAthlete.getOrDefault(selectedAthlete.getCode(), Collections.emptyList());
+				medalsTableModel.updateMedals(medals);
 			}
 		});
 
@@ -134,11 +162,26 @@ public class MainWindow extends JFrame {
 		formAthletes = new AthleteFormPanel(countries);
 		formAthletes.setEditable(false); // formulario en modo no editable
 		jTabbedPane.addTab("Datos", formAthletes);
-
-		jTabbedPane.addTab("Medallas", new JPanel());
+		
+		jTabbedPane.addTab("Medallas", createMedalPanel());
 		add(jTabbedPane, BorderLayout.CENTER);
 
 		setVisible(true); // hacemos visible la ventana
+	}
+	
+	// crea el panel que contiene el JTable de medallas
+	private JComponent createMedalPanel() {
+		// creamos el modelo de datos de la tabla
+		medalsTableModel = new MedalsTableModel(Collections.emptyList());
+		// creamos la tabla de medallas y le asignamos el modelo de datos
+		medalsJTable = new JTable(medalsTableModel);
+
+		// vamos a establecer el tamaño de las columnas de tipo y fecha para ajustar mejor la tabla
+		medalsJTable.getColumnModel().getColumn(0).setMaxWidth(60);
+		medalsJTable.getColumnModel().getColumn(1).setMaxWidth(80);
+		
+		// añadimos la tabla a un panel de scroll y lo devolvemos
+		return new JScrollPane(medalsJTable);
 	}
 
 	// método para crear el menú de la ventana
