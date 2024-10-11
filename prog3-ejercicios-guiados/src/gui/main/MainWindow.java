@@ -5,6 +5,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -179,6 +181,15 @@ public class MainWindow extends JFrame {
 		// vamos a establecer el tamaño de las columnas de tipo y fecha para ajustar mejor la tabla
 		medalsJTable.getColumnModel().getColumn(0).setMaxWidth(60);
 		medalsJTable.getColumnModel().getColumn(1).setMaxWidth(80);
+		
+		// configuramos el renderer de la columna de metal de la medalla
+		medalsJTable.getColumnModel().getColumn(0).setCellRenderer(new MetalTableCellRenderer());
+		
+		// este renderer se lo vamos a añadir a toda la tabla, pero se va filtrar por tipo de dato
+		// de tal manera que únicamente se aplique a las columnas cuyo tipo es LocalDate de acuerdo
+		// al método getColumnClass del modelo de datos
+		// vamos a usar el formato localizado de fecha "2 ago 2024"
+		medalsJTable.setDefaultRenderer(LocalDate.class, new DateTableCellRenderer(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)));
 		
 		// añadimos la tabla a un panel de scroll y lo devolvemos
 		return new JScrollPane(medalsJTable);
