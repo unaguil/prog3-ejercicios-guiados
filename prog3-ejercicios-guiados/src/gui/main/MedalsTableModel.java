@@ -113,4 +113,16 @@ public class MedalsTableModel extends AbstractTableModel {
 		// la tabla se repinte
 		fireTableDataChanged();
 	}
+	
+	/**
+	 * Añade una nueva medalla a la lista de medallas del modelo
+	 * y notifica al JTable asociado para que se actualice
+	 * @param medal	medalla a añadir
+	 */
+	public void addMedal(Medal medal) {
+		medals.add(medal);
+		
+		// podemos indicar que se ha añadido una fila concreta
+        fireTableRowsInserted(medals.size() - 1, medals.size() - 1);
+    }
 }

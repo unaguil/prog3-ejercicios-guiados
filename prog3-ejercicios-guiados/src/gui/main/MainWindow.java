@@ -1,12 +1,15 @@
 package gui.main;
 
 import java.awt.BorderLayout;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -41,25 +44,25 @@ public class MainWindow extends JFrame {
 	private static final long serialVersionUID = 1L;
 
 	private List<Athlete> sampleAthletes = List.of(
-		new Athlete(1111111, "Apellido, Nombre 1", Genre.FEMALE, "Country 1", LocalDate.of(1990, 12, 15)),
-		new Athlete(2222222, "Apellido, Nombre 2", Genre.FEMALE, "Country 2", LocalDate.of(1995, 5, 20)),
-		new Athlete(3333333, "Apellido, Nombre 3", Genre.MALE, "Country 1", LocalDate.of(1993, 1, 30)),
-		new Athlete(4444444, "Apellido, Nombre 4", Genre.MALE, "Country 3", LocalDate.of(1994, 3, 29)),
-		new Athlete(5555555, "Apellido, Nombre 5", Genre.FEMALE, "Country 4", LocalDate.of(1998, 7, 9))
-	);
-	
+			new Athlete(1111111, "Apellido, Nombre 1", Genre.FEMALE, "Country 1", LocalDate.of(1990, 12, 15)),
+			new Athlete(2222222, "Apellido, Nombre 2", Genre.FEMALE, "Country 2", LocalDate.of(1995, 5, 20)),
+			new Athlete(3333333, "Apellido, Nombre 3", Genre.MALE, "Country 1", LocalDate.of(1993, 1, 30)),
+			new Athlete(4444444, "Apellido, Nombre 4", Genre.MALE, "Country 3", LocalDate.of(1994, 3, 29)),
+			new Athlete(5555555, "Apellido, Nombre 5", Genre.FEMALE, "Country 4", LocalDate.of(1998, 7, 9)));
+
 	private List<String> countries = List.of("Country 1", "Country 2", "Country 3", "Country 4");
 
-	private Map<Integer, List<Medal>> medalsPerAthlete = Map.of(sampleAthletes.get(0).getCode(),
-			List.of(new Medal(Metal.SILVER, LocalDate.of(2024, 7, 29), sampleAthletes.get(0), "Discipline 1"),
-					new Medal(Metal.GOLD, LocalDate.of(2024, 7, 30), sampleAthletes.get(0), "Discipline 2")
+	private Map<Integer, List<Medal>> medalsPerAthlete = Map.of(
+			sampleAthletes.get(0).getCode(), new ArrayList<>(Arrays.asList(
+					new Medal(Metal.SILVER, LocalDate.of(2024, 7, 29), sampleAthletes.get(0), "Discipline 1"),
+					new Medal(Metal.GOLD, LocalDate.of(2024, 7, 30), sampleAthletes.get(0), "Discipline 2"))
 			),
-			sampleAthletes.get(1).getCode(),
-			List.of(new Medal(Metal.BRONZE, LocalDate.of(2024, 7, 29), sampleAthletes.get(1), "Discipline 1"),
-					new Medal(Metal.GOLD, LocalDate.of(2024, 8, 2), sampleAthletes.get(1), "Discipline 3")
+			sampleAthletes.get(1).getCode(), new ArrayList<>(Arrays.asList(
+					new Medal(Metal.BRONZE, LocalDate.of(2024, 7, 29), sampleAthletes.get(1), "Discipline 1"),
+					new Medal(Metal.GOLD, LocalDate.of(2024, 8, 2), sampleAthletes.get(1), "Discipline 3"))
 			),
-			sampleAthletes.get(2).getCode(),
-			List.of(new Medal(Metal.SILVER, LocalDate.of(2024, 8, 5), sampleAthletes.get(2), "Discipline 4")
+			sampleAthletes.get(2).getCode(), new ArrayList<>(Arrays.asList(
+					new Medal(Metal.SILVER, LocalDate.of(2024, 8, 5), sampleAthletes.get(2), "Discipline 4"))
 			)
 	);
 
@@ -67,7 +70,7 @@ public class MainWindow extends JFrame {
 	private JList<Athlete> jListAthletes; // referencia al JList de atletas
 	private AthleteFormPanel formAthletes; // referencia al formulario (JPanel) de atletas
 	private JButton removeAthletesButton; // referencia al botón de eliminar athletas
-	
+
 	private MedalsTableModel medalsTableModel; // referencia al modelo de datos de la tabla
 	private JTable medalsJTable; // referencia a la tabla de medallas
 
@@ -112,16 +115,22 @@ public class MainWindow extends JFrame {
 			// solamente vamos a procesar el último evento de la selección en el JList
 			// esto evita procesar dos veces cada selección de items
 			if (!e.getValueIsAdjusting()) {
-				// obtenemos el atleta seleccionado del JList
-				Athlete selectedAthlete = jListAthletes.getSelectedValue();
-				// lo mostramos en el formulario de la derecha
-				formAthletes.setAthlete(selectedAthlete);
-				
-				// establecemos también los datos a mostrar en la tabla de medallas
-				// obteniendo la lista de medallas del atleta seleccionado del mapa
-				// si el atleta no tiene medallas usamos una lista vacía
-				List<Medal> medals = medalsPerAthlete.getOrDefault(selectedAthlete.getCode(), Collections.emptyList());
-				medalsTableModel.updateMedals(medals);
+				// comprobamos que haya algún atleta seleccionado
+				if (jListAthletes.getSelectedIndices().length > 0) {
+					// obtenemos el atleta seleccionado del JList
+					Athlete selectedAthlete = jListAthletes.getSelectedValue();
+					// lo mostramos en el formulario de la derecha
+					formAthletes.setAthlete(selectedAthlete);
+	
+					// establecemos también los datos a mostrar en la tabla de medallas
+					// obteniendo la lista de medallas del atleta seleccionado del mapa
+					// si el atleta no tiene medallas usamos una lista vacía
+					List<Medal> medals = medalsPerAthlete.getOrDefault(selectedAthlete.getCode(), Collections.emptyList());
+					medalsTableModel.updateMedals(medals);
+				} else {
+					// en caso contrario limpiamos el formulario de atletas
+					formAthletes.setAthlete(null);
+				}
 			}
 		});
 
@@ -164,13 +173,60 @@ public class MainWindow extends JFrame {
 		formAthletes = new AthleteFormPanel(countries);
 		formAthletes.setEditable(false); // formulario en modo no editable
 		jTabbedPane.addTab("Datos", formAthletes);
-		
+
 		jTabbedPane.addTab("Medallas", createMedalPanel());
 		add(jTabbedPane, BorderLayout.CENTER);
 
+		// añadimos un evento de teclado a la lista de atletas
+		jListAthletes.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				// si el usuario ha pulsado la tecla SUPR
+				if (e.getKeyCode() == KeyEvent.VK_DELETE) {
+					// se borran los atletas si hay seleccionados
+					if (jListAthletes.getSelectedIndices().length > 0) {
+						showRemoveAthletesDialog();
+					}
+				}
+
+				// si el usuario pulsa la tecla CTRL + M
+				if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_M) {
+					// se comprueba que algún atleta seleccionado
+					if (jListAthletes.getSelectedIndices().length > 0) {
+						// se cambia al panel de medallas
+						jTabbedPane.setSelectedIndex(1);
+						
+						// se crea una nueva medalla para el atleta seleccionado
+						// y se añade al modelo de datos de la tabla
+						Athlete selectedAthlete = jListAthletes.getSelectedValue();
+						Medal newMedal = new Medal(Metal.BRONZE, LocalDate.now(), selectedAthlete, "Nueva disciplina");
+						medalsTableModel.addMedal(newMedal);
+						
+						// seleccionamos en la tabla la nueva medalla
+						// para que el usuario pueda editarla
+						int row = medalsTableModel.getRowCount() - 1;
+						medalsJTable.setRowSelectionInterval(row, row);
+						medalsJTable.editCellAt(row, 0);
+					}
+				}
+				
+				// si el usuario pulsa la tecla CTRL + A
+				if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_A) {
+					// muestra el diálogo de para añadir un nuevo atleta
+					showNewAthleteDialog();
+				}
+				
+				// si el usuario pulsa la tecla ESC
+				if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    // se deselecciona cualquier atleta seleccionado
+					jListAthletes.clearSelection();
+				}
+			}
+		});
+
 		setVisible(true); // hacemos visible la ventana
 	}
-	
+
 	// crea el panel que contiene el JTable de medallas
 	private JComponent createMedalPanel() {
 		// creamos el modelo de datos de la tabla
@@ -178,26 +234,30 @@ public class MainWindow extends JFrame {
 		// creamos la tabla de medallas y le asignamos el modelo de datos
 		medalsJTable = new JTable(medalsTableModel);
 
-		// vamos a establecer el tamaño de las columnas de tipo y fecha para ajustar mejor la tabla
+		// vamos a establecer el tamaño de las columnas de tipo y fecha para ajustar
+		// mejor la tabla
 		medalsJTable.getColumnModel().getColumn(0).setMaxWidth(60);
 		medalsJTable.getColumnModel().getColumn(1).setMaxWidth(80);
-		
+
 		// configuramos el renderer de la columna de metal de la medalla
 		medalsJTable.getColumnModel().getColumn(0).setCellRenderer(new MetalTableCellRenderer());
-		
-		// este renderer se lo vamos a añadir a toda la tabla, pero se va filtrar por tipo de dato
-		// de tal manera que únicamente se aplique a las columnas cuyo tipo es LocalDate de acuerdo
+
+		// este renderer se lo vamos a añadir a toda la tabla, pero se va filtrar por
+		// tipo de dato
+		// de tal manera que únicamente se aplique a las columnas cuyo tipo es LocalDate
+		// de acuerdo
 		// al método getColumnClass del modelo de datos
 		// vamos a usar el formato localizado de fecha "2 ago 2024"
-		medalsJTable.setDefaultRenderer(LocalDate.class, new DateTableCellRenderer(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)));
-		
+		medalsJTable.setDefaultRenderer(LocalDate.class,
+				new DateTableCellRenderer(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)));
+
 		// establecemos el editor para la primera columna de la tabla (tipo de metal)
 		// que es un JComboBox con los valores del enum Metal
 		medalsJTable.getColumnModel().getColumn(0).setCellEditor(new MetalTableCellEditor());
-		
+
 		// establecemos el editor para la segunda columna de la tabla (fecha)
 		medalsJTable.getColumnModel().getColumn(1).setCellEditor(new DateTableCellEditor());
-		
+
 		// añadimos la tabla a un panel de scroll y lo devolvemos
 		return new JScrollPane(medalsJTable);
 	}
@@ -218,7 +278,7 @@ public class MainWindow extends JFrame {
 		// abrimos el cuadro de diálogo de nuevo atleta y
 		// procesamos el resultado de la operación
 		newAhtleteMenuItem.addActionListener(e -> showNewAthleteDialog());
-		
+
 		fileMenu.add(newAhtleteMenuItem);
 
 		fileMenu.addSeparator();
@@ -261,11 +321,9 @@ public class MainWindow extends JFrame {
 	private void showRemoveAthletesDialog() {
 		int[] selectedIndices = jListAthletes.getSelectedIndices();
 		// primero mostramos un diálogo de confirmación al usuario
-		int result = JOptionPane.showConfirmDialog(this, 
+		int result = JOptionPane.showConfirmDialog(this,
 				String.format("¿Está seguro de querer eliminar %d atletas seleccionados", selectedIndices.length),
-				"Eliminar atletas",
-				JOptionPane.YES_NO_OPTION
-		);
+				"Eliminar atletas", JOptionPane.YES_NO_OPTION);
 		if (result == JOptionPane.YES_OPTION) {
 			// si la respuesta del usuario es afirmativa
 			// obtenemos la lista de índices seleccionados en el JList de atletas
@@ -281,7 +339,7 @@ public class MainWindow extends JFrame {
 	private void confirmWindowClosing() {
 		int result = JOptionPane.showConfirmDialog(MainWindow.this, "¿Seguro que desea salir?", "Salir",
 				JOptionPane.YES_NO_OPTION);
-		
+
 		if (result == JOptionPane.YES_OPTION) {
 			// el usuario está seguro que desea salir
 			System.exit(0); // terminamos el programa
