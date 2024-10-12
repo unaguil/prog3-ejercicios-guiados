@@ -13,8 +13,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
-import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -27,6 +27,9 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import domain.Athlete;
 import domain.Athlete.Genre;
@@ -43,12 +46,13 @@ public class MainWindow extends JFrame {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	private List<Athlete> sampleAthletes = List.of(
+	private List<Athlete> sampleAthletes = new ArrayList<>(Arrays.asList(
 			new Athlete(1111111, "Apellido, Nombre 1", Genre.FEMALE, "Country 1", LocalDate.of(1990, 12, 15)),
 			new Athlete(2222222, "Apellido, Nombre 2", Genre.FEMALE, "Country 2", LocalDate.of(1995, 5, 20)),
 			new Athlete(3333333, "Apellido, Nombre 3", Genre.MALE, "Country 1", LocalDate.of(1993, 1, 30)),
 			new Athlete(4444444, "Apellido, Nombre 4", Genre.MALE, "Country 3", LocalDate.of(1994, 3, 29)),
-			new Athlete(5555555, "Apellido, Nombre 5", Genre.FEMALE, "Country 4", LocalDate.of(1998, 7, 9)));
+			new Athlete(5555555, "Apellido, Nombre 5", Genre.FEMALE, "Country 4", LocalDate.of(1998, 7, 9))
+	));
 
 	private List<String> countries = List.of("Country 1", "Country 2", "Country 3", "Country 4");
 
@@ -66,7 +70,8 @@ public class MainWindow extends JFrame {
 			)
 	);
 
-	private DefaultListModel<Athlete> jListModelAthletes; // referencia al modelo de datos de la lista
+	private AthleteListCellRenderer athleteListCellRenderer; // referencia al renderer de la lista de atletas
+	private FilterListModel<Athlete> jListModelAthletes; // referencia al modelo de datos de la lista
 	private JList<Athlete> jListAthletes; // referencia al JList de atletas
 	private AthleteFormPanel formAthletes; // referencia al formulario (JPanel) de atletas
 	private JButton removeAthletesButton; // referencia al botón de eliminar athletas
@@ -98,14 +103,17 @@ public class MainWindow extends JFrame {
 
 		// creamos un modelo de datos para instancias Athlete que son las que maneja
 		// la aplicación, así nos evitamos convertir de Athlete a String y viceversa
-		jListModelAthletes = new DefaultListModel<Athlete>();
-		jListModelAthletes.addAll(sampleAthletes);
-
+		// vamos a utilizar un modelo de datos propio al que se le puede especificar
+		// un filtro cuando sea necesario
+		jListModelAthletes = new FilterListModel<>(sampleAthletes);
+		
 		// instanciamos y añadimos un JList en la parte WEST del BorderLayout
 		// usamos un JScrollPane para permitir el scroll vertical
 		jListAthletes = new JList<Athlete>(jListModelAthletes);
 		jListAthletes.setFixedCellWidth(200); // anchura fija del JList
-		jListAthletes.setCellRenderer(new AthleteListCellRenderer());
+		
+		athleteListCellRenderer = new AthleteListCellRenderer();
+		jListAthletes.setCellRenderer(athleteListCellRenderer);
 
 		// registramos un escuchador en la lista para actualizar el panel de la derecha
 		// con el atleta seleccionado en cada momento
@@ -150,7 +158,47 @@ public class MainWindow extends JFrame {
 		// panel izquierdo de la ventana que contiene el scrollpane de
 		// la lista y un panel para botones en la parte inferior
 		// con el botón de eliminación de atletas seleccionados
+		// también contiene un campo de texto para filtrar la lista
 		JPanel leftPanel = new JPanel(new BorderLayout());
+		
+		// creamos un campo para filtrar la lista de atletas
+		JTextField filterTextField = new JTextField("");
+		leftPanel.add(filterTextField, BorderLayout.NORTH);
+		
+		// instancia de un Predicate que se encarga de determinar si un atleta
+		// cumple con el criterio de búsqueda especificado en el campo de texto
+		// si el nombre del atleta contiene el texto del campo de filtro
+		Predicate<Athlete> filter = new Predicate<Athlete>() {
+			
+			@Override
+			public boolean test(Athlete t) {
+				return t.getName().toLowerCase().contains(filterTextField.getText().toLowerCase());
+			}
+		};
+			
+		// escuchador de eventos para actualizar el filtro del modelo de datos
+		filterTextField.getDocument().addDocumentListener(new DocumentListener() {
+			
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				jListModelAthletes.setFilter(filter); // aplicar el nuevo filtro
+				// establecemos el texto a resaltar en el renderer de la lista
+				athleteListCellRenderer.setHighLightedText(filterTextField.getText());
+			}
+
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				jListModelAthletes.setFilter(filter); // aplicar el nuevo filtro
+				// establecemos el texto a resaltar en el renderer de la lista
+				athleteListCellRenderer.setHighLightedText(filterTextField.getText());
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				// no hacemos nada en este caso
+			}
+		});
+		
 		leftPanel.add(scrollJListAthletes, BorderLayout.CENTER);
 
 		JPanel buttonsPanel = new JPanel();
