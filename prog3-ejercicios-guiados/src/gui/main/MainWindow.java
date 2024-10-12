@@ -191,6 +191,13 @@ public class MainWindow extends JFrame {
 		// vamos a usar el formato localizado de fecha "2 ago 2024"
 		medalsJTable.setDefaultRenderer(LocalDate.class, new DateTableCellRenderer(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)));
 		
+		// establecemos el editor para la primera columna de la tabla (tipo de metal)
+		// que es un JComboBox con los valores del enum Metal
+		medalsJTable.getColumnModel().getColumn(0).setCellEditor(new MetalTableCellEditor());
+		
+		// establecemos el editor para la segunda columna de la tabla (fecha)
+		medalsJTable.getColumnModel().getColumn(1).setCellEditor(new DateTableCellEditor());
+		
 		// añadimos la tabla a un panel de scroll y lo devolvemos
 		return new JScrollPane(medalsJTable);
 	}

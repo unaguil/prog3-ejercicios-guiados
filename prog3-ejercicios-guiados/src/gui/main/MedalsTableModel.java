@@ -76,6 +76,32 @@ public class MedalsTableModel extends AbstractTableModel {
 		}
 	}
 
+	@Override
+	public boolean isCellEditable(int rowIndex, int columnIndex) {
+		// indica si una celda es editable o no
+		// queremos que todas las celdas de la tabla sean editables
+		return true;
+	}
+
+	@Override
+	public void setValueAt(Object value, int rowIndex, int columnIndex) {
+		// este método es llamado por el JTable cuando el usuario
+		// modifica el valor de una celda, el modelo de datos debe
+		// actualizar los datos internos en consecuencia
+		Medal m = medals.get(rowIndex); // fila que se ha modificado
+		switch (columnIndex) {
+		case 0:
+			m.setMetal((Medal.Metal) value);
+			break;
+		case 1:
+			m.setMedalDate((LocalDate) value);
+			break;
+		case 2:
+			m.setDiscipline((String) value);
+			break;
+		}
+	}
+
 	/**
 	 * Actualiza la lista de medallas del modelo de datos y
 	 * notifica al JTable asociado para que se actualice

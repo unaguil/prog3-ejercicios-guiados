@@ -39,6 +39,15 @@ public class Medal {
 	public Metal getMetal() {
 		return metal;
 	}
+	
+	/**
+	 * Establece el tipo de medalla
+	 * 
+	 * @param metal tipo de medalla
+	 */
+	public void setMetal(Metal metal) {
+		this.metal = metal;
+	}
 
 	/**
 	 * Obtiene la fecha de la competición
@@ -46,6 +55,15 @@ public class Medal {
 	 */
 	public LocalDate getMedalDate() {
 		return date;
+	}
+	
+	/**
+	 * Establece la fecha de la competición
+	 * 
+	 * @param date fecha de la competición
+	 */
+	public void setMedalDate(LocalDate date) {
+		this.date = date;
 	}
 
 	/**
@@ -62,6 +80,15 @@ public class Medal {
 	 */
 	public String getDiscipline() {
 		return discipline;
+	}
+	
+	/**
+	 * Establece el nombre de la disciplina en la que se obtuvo la medalla
+	 * 
+	 * @param discipline nombre de la disciplina
+	 */
+	public void setDiscipline(String discipline) {
+		this.discipline = discipline;
 	}
 	
 	@Override
