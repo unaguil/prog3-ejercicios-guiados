@@ -1,8 +1,11 @@
 package gui.main;
 
 import java.awt.BorderLayout;
+import java.awt.GridLayout;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.time.LocalDate;
@@ -17,6 +20,7 @@ import java.util.function.Predicate;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JMenu;
@@ -70,6 +74,13 @@ public class MainWindow extends JFrame {
 			)
 	);
 
+	private Map<String, String> contextualInfo = Map.of(
+			"Discipline 1", "<html> <b>Description of discipline 1</bb> <br> <i>Some additional information</i> </html>",
+			"Discipline 2", "<html> <b>Description of discipline 2</bb> <br> <i>Some additional information</i> </html>",
+			"Discipline 3", "<html> <b>Description of discipline 3</bb> <br> <i>Some additional information</i> </html>",
+			"Discipline 4", "<html> <b>Description of discipline 4</bb> <br> <i>Some additional information</i> </html>"
+	);
+
 	private AthleteListCellRenderer athleteListCellRenderer; // referencia al renderer de la lista de atletas
 	private FilterListModel<Athlete> jListModelAthletes; // referencia al modelo de datos de la lista
 	private JList<Athlete> jListAthletes; // referencia al JList de atletas
@@ -78,6 +89,7 @@ public class MainWindow extends JFrame {
 
 	private MedalsTableModel medalsTableModel; // referencia al modelo de datos de la tabla
 	private JTable medalsJTable; // referencia a la tabla de medallas
+	private JEditorPane contextualInfoEditorPane; // referencia al JEditorPane de información contextual
 
 	public MainWindow() {
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE); // comportamiento al cerrar
@@ -222,7 +234,20 @@ public class MainWindow extends JFrame {
 		formAthletes.setEditable(false); // formulario en modo no editable
 		jTabbedPane.addTab("Datos", formAthletes);
 
-		jTabbedPane.addTab("Medallas", createMedalPanel());
+		// panel general del tab de medallas que contiene la tabla de medallas
+		// y un JTextArea para mostrar información contextual sobre la información
+		// seleccionada por el usuario en la tabla
+		JPanel medalsTabPanel = new JPanel(new GridLayout(2, 1));
+		medalsTabPanel.add(createMedalPanel());
+		
+		// añadimos un JTextArea para mostrar información contextual con
+		// formato HTML
+		contextualInfoEditorPane = new JEditorPane();
+		contextualInfoEditorPane.setEditable(false);
+		contextualInfoEditorPane.setContentType("text/html");
+		medalsTabPanel.add(new JScrollPane(contextualInfoEditorPane));
+		
+		jTabbedPane.addTab("Medallas", medalsTabPanel);
 		add(jTabbedPane, BorderLayout.CENTER);
 
 		// añadimos un evento de teclado a la lista de atletas
@@ -305,6 +330,31 @@ public class MainWindow extends JFrame {
 
 		// establecemos el editor para la segunda columna de la tabla (fecha)
 		medalsJTable.getColumnModel().getColumn(1).setCellEditor(new DateTableCellEditor());
+		
+		// añadimos un listener de ratón para mostrar información contextual
+		// sobre la celda seleccionada de la tabla
+		medalsJTable.addMouseListener(new MouseAdapter() {
+			@Override
+            public void mouseClicked(MouseEvent e) {
+                // obtenemos la fila y columna de la celda seleccionada
+                int row = medalsJTable.rowAtPoint(e.getPoint());
+                int col = medalsJTable.columnAtPoint(e.getPoint());
+                
+                // unicamente mostramos información contextual si la celda seleccionada
+                // corresponde con la columna de disciplina de la tabla, en caso contrario
+                // mostramos un texto por defecto
+                String info = "<html><i>No hay información disponible</i></html>";
+                if (col == 2) {
+                    // obtenemos el valor de la celda seleccionada
+                    String searchKey = medalsJTable.getValueAt(row, col).toString();
+                    // mostramos la información contextual en el JTextArea
+                    info = contextualInfo.getOrDefault(searchKey, info);
+                }
+                
+                // mostramos la información contextual en el JTextArea
+                contextualInfoEditorPane.setText(info);
+            }
+		});
 
 		// añadimos la tabla a un panel de scroll y lo devolvemos
 		return new JScrollPane(medalsJTable);
