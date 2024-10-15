@@ -118,6 +118,7 @@ public class AthleteFormPanel extends JPanel {
 
 		// vamos a utilizar un JComboBox para el selector de países
 		countryComboBox = new JComboBox<String>(countries.toArray(String[]::new));
+		countryComboBox.setRenderer(new CountryCellRenderer());
 		countryPanel.add(countryLabel);
 		countryPanel.add(countryComboBox);
 
