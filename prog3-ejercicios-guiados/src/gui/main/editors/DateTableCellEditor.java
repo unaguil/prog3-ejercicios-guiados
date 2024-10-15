@@ -1,4 +1,4 @@
-package gui.main;
+package gui.main.editors;
 
 import java.awt.Component;
 import java.awt.event.ActionEvent;
@@ -20,7 +20,7 @@ import org.jdatepicker.JDatePicker;
  * La clase implementa un ActionListener para que el selector de fecha pueda
  * avisar de que el usuario ha seleccionado una fecha.
  */
-class DateTableCellEditor extends AbstractCellEditor implements TableCellEditor, ActionListener {
+public class DateTableCellEditor extends AbstractCellEditor implements TableCellEditor, ActionListener {
 
 	/**
 	 *

@@ -1,4 +1,4 @@
-package gui.main;
+package gui.main.editors;
 
 import java.awt.Component;
 

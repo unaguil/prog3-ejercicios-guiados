@@ -1,4 +1,4 @@
-package gui.main;
+package gui.main.form;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -25,6 +25,7 @@ import javax.swing.border.Border;
 
 import domain.Athlete;
 import domain.Athlete.Genre;
+import gui.main.renderers.CountryCellRenderer;
 
 /**
  * Formulario que permite visualizar o editar los datos de un atleta. Se

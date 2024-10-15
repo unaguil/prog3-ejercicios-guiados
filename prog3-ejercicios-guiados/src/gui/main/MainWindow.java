@@ -39,6 +39,16 @@ import domain.Athlete;
 import domain.Athlete.Genre;
 import domain.Medal;
 import domain.Medal.Metal;
+import gui.main.dialogs.NewAthleteDialog;
+import gui.main.editors.DateTableCellEditor;
+import gui.main.editors.MetalTableCellEditor;
+import gui.main.form.AthleteFormPanel;
+import gui.main.form.FormDataNotValid;
+import gui.main.models.FilterListModel;
+import gui.main.models.MedalsTableModel;
+import gui.main.renderers.AthleteListCellRenderer;
+import gui.main.renderers.DateTableCellRenderer;
+import gui.main.renderers.MetalTableCellRenderer;
 
 /**
  * Ventana principal de la aplicación.

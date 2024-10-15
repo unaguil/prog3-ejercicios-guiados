@@ -1,4 +1,4 @@
-package gui.main;
+package gui.main.dialogs;
 
 import java.awt.BorderLayout;
 import java.awt.Window;
@@ -10,6 +10,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import domain.Athlete;
+import gui.main.form.AthleteFormPanel;
+import gui.main.form.FormDataNotValid;
 
 /**
  * Dialogo que permite registrar un nuevo atleta.

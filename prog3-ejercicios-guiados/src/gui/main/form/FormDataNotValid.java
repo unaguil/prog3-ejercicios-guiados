@@ -1,4 +1,4 @@
-package gui.main;
+package gui.main.form;
 
 /**
  * Excepción utilizada para representar errores de datos en los

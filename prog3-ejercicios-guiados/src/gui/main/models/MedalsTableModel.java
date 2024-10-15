@@ -1,4 +1,4 @@
-package gui.main;
+package gui.main.models;
 
 import java.util.Collections;
 import java.time.LocalDate;
