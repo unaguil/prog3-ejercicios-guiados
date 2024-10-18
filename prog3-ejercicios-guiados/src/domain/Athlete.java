@@ -1,6 +1,8 @@
 package domain;
 import java.time.LocalDate;
 
+import domain.managers.AthleteManager;
+
 /**
  * Clase que representa a los atletas que han competido en los JJ.OO.
  */
@@ -38,6 +40,19 @@ public class Athlete {
 		this.birthdate = birthdate;
 		this.height = 0.0f;
 		this.weight = 0.0f;
+	}
+	
+	/**
+	 * Constructor de la clase que recibe los datos básicos, pero sin especificar el código, que se
+	 * establece al valor por defecto a -1.
+	 * 
+	 * @param name nombre completo del atleta en formato "APELLIDO NOMBRE"
+	 * @param genre género del atleta
+	 * @param country país del atleta
+	 * @param birthdate fecha de nacimiento del atleta
+	 */
+	public Athlete(String name, Genre genre, String country, LocalDate birthdate) {
+		this(AthleteManager.NOT_VALID_ID, name, genre, country, birthdate); // reutilizamos el constructor anterior
 	}
 	
 	/**

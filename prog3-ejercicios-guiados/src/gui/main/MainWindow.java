@@ -8,6 +8,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
@@ -21,6 +22,7 @@ import java.util.function.Predicate;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JMenu;
@@ -34,11 +36,14 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import domain.Athlete;
 import domain.Athlete.Genre;
 import domain.Medal;
 import domain.Medal.Metal;
+import domain.managers.AthleteManager;
+import domain.managers.DataManagerException;
 import gui.main.dialogs.NewAthleteDialog;
 import gui.main.editors.DateTableCellEditor;
 import gui.main.editors.MetalTableCellEditor;
@@ -49,6 +54,8 @@ import gui.main.models.MedalsTableModel;
 import gui.main.renderers.AthleteListCellRenderer;
 import gui.main.renderers.DateTableCellRenderer;
 import gui.main.renderers.MetalTableCellRenderer;
+import io.CSVDataReader;
+import io.CSVDataReaderException;
 
 /**
  * Ventana principal de la aplicación.
@@ -59,6 +66,8 @@ public class MainWindow extends JFrame {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	
+	private AthleteManager athleteManager = new AthleteManager();
 
 	private List<Athlete> sampleAthletes = new ArrayList<>(Arrays.asList(
 			new Athlete(1111111, "Apellido, Nombre 1", Genre.FEMALE, "Country 1", LocalDate.of(1990, 12, 15)),
@@ -393,6 +402,9 @@ public class MainWindow extends JFrame {
 
 		JMenuItem importMenuItem = new JMenuItem("Importar...");
 		importMenuItem.setMnemonic(KeyEvent.VK_I);
+	
+		importMenuItem.addActionListener(e -> loadAthletesFromCSV());
+		
 		fileMenu.add(importMenuItem);
 
 		JMenuItem exportMenuItem = new JMenuItem("Exportar...");
@@ -451,6 +463,37 @@ public class MainWindow extends JFrame {
 		if (result == JOptionPane.YES_OPTION) {
 			// el usuario está seguro que desea salir
 			System.exit(0); // terminamos el programa
+		}
+	}
+	
+	// método que carga la información de atletas desde fichero
+	private void loadAthletesFromCSV() {
+		// creamos el selector de fichero para mostrar la carpeta la carpeta principal del usuario
+		JFileChooser jFileChooser = new JFileChooser(new File(System.getProperty("user.home")));
+		// filtramos para ver únicamente los ficheros con extensión csv
+		jFileChooser.setFileFilter(new FileNameExtensionFilter("Fichero CSV", "csv"));
+		int result = jFileChooser.showOpenDialog(this); // abrimos el dialogo y esperamos al resultado
+		if (result == JFileChooser.APPROVE_OPTION) {
+			// si el usuario ha seleccionado un fichero, lo leemos
+			try {
+				List<Athlete> loadedAthletes = CSVDataReader.loadAthletes(jFileChooser.getSelectedFile());
+				// se registran los atletas leídos en el gestor de datos
+				for (Athlete athlete : loadedAthletes) {
+					try {
+						athleteManager.add(athlete);
+					} catch (DataManagerException e) {
+						System.out.format("Error. Atleta '%d ya registrado%n", athlete.getCode());
+					}
+				}
+				
+				// se saca un diálogo indicando el número de atletas que se han leído desde el CSV
+				JOptionPane.showMessageDialog(this, String.format("Se han cargado %d atletas desde el fichero", loadedAthletes.size(), "Importar", JOptionPane.INFORMATION_MESSAGE));
+				
+				//
+								
+			} catch (CSVDataReaderException e) {
+				JOptionPane.showMessageDialog(this, String.format("No se pudo leer el fichero .%n%s", e.getMessage()), "Error", JOptionPane.ERROR_MESSAGE);
+			}
 		}
 	}
 }
