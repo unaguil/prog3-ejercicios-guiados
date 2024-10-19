@@ -8,6 +8,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -15,20 +18,28 @@ import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
@@ -36,6 +47,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import domain.Athlete;
 import domain.Athlete.Genre;
@@ -97,6 +109,10 @@ public class MainWindow extends JFrame {
 	private MedalsTableModel medalsTableModel; // referencia al modelo de datos de la tabla
 	private JTable medalsJTable; // referencia a la tabla de medallas
 	private JEditorPane contextualInfoEditorPane; // referencia al JEditorPane de información contextual
+	
+	private JPanel bottomPanel; // referencia al panel inferior de la ventana
+	private JProgressBar progressBar; // referencia a la barra de progreso	
+	private Thread exportThread; // referencia al hilo de exportación de disciplinas
 
 	public MainWindow() {
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE); // comportamiento al cerrar
@@ -303,7 +319,39 @@ public class MainWindow extends JFrame {
 				}
 			}
 		});
-
+		
+		// añadimos el panel con la barra de progreso y el botón cancelar
+		// a la parte inferior de la ventana pero inicialmente es invisible
+		bottomPanel = new JPanel();
+		bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.X_AXIS));
+		bottomPanel.setVisible(false);
+		
+    	JLabel taskLabel = new JLabel("Exportando disciplinas...");
+    	bottomPanel.add(taskLabel);
+    	bottomPanel.add(Box.createHorizontalStrut(5));
+    	
+    	progressBar = new JProgressBar();
+    	progressBar.setStringPainted(true);
+  
+    	bottomPanel.add(progressBar, BorderLayout.CENTER);
+    	bottomPanel.add(Box.createHorizontalStrut(20));
+    	
+    	JButton cancelButton = new JButton("Cancelar");
+    	bottomPanel.add(cancelButton, BorderLayout.EAST);
+    	
+    	// al pulsar el botón de cancelar se interrumpe el hilo
+    	// si es que ha sido lanzado (es distinto de null)
+        cancelButton.addActionListener(a -> {
+			if (exportThread != null) {
+				System.out.println("Interrumpiendo el hilo de descarga");
+				exportThread.interrupt();
+				exportThread = null;
+			}
+        });
+        
+        // añadimos el panel invisible a la ventana en la parte inferior
+        add(bottomPanel, BorderLayout.SOUTH);
+		
 		setVisible(true); // hacemos visible la ventana
 	}
 
@@ -439,6 +487,20 @@ public class MainWindow extends JFrame {
 
 		JMenuItem exportMenuItem = new JMenuItem("Exportar...");
 		exportMenuItem.setMnemonic(KeyEvent.VK_E);
+		exportMenuItem.addActionListener(e -> {
+            // mostramos un diálogo de selección de fichero
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setFileFilter(new FileNameExtensionFilter("txt", "Ficheros de texto"));
+            fileChooser.setDialogTitle("Exportar disciplinas");
+            int result = fileChooser.showSaveDialog(MainWindow.this);
+            if (result == JFileChooser.APPROVE_OPTION) {
+            	
+            	
+                File exportFile = fileChooser.getSelectedFile();
+                exportSelectedDisciplines(exportFile, progressBar);
+            }
+        });
+		
 		fileMenu.add(exportMenuItem);
 
 		fileMenu.addSeparator();
@@ -491,8 +553,95 @@ public class MainWindow extends JFrame {
 				JOptionPane.YES_NO_OPTION);
 
 		if (result == JOptionPane.YES_OPTION) {
+			// antes de salir paramos el hilo de exportación si está en ejecución
+			if (exportThread != null) {
+				exportThread.interrupt();
+				exportThread = null;
+			}
+			
 			// el usuario está seguro que desea salir
 			System.exit(0); // terminamos el programa
 		}
+	}
+	
+	// exporta las descripciones de las disciplinas en las que han participado
+	// los atletas seleccionados en el JList de atletas a un fichero de texto
+	// la tarea se lanza en un hilo para no bloquear la interfaz de usuario
+	// el método devuelve la referencia al thread que se ha lanzado
+	private void exportSelectedDisciplines(File exportFile, JProgressBar progressBar) {
+		// obtenemos los atletas seleccionados en el JList
+		List<Athlete> selectedAthletes = jListAthletes.getSelectedValuesList();
+		
+		// obtenemos el conjunto de todas las disciplinas a exportar
+		// para poder establecer el máximo de la barra de progreso
+		// vamos a utilizar un stream pero se puede usar un bucle
+		Set<String> disciplines = selectedAthletes.stream()
+				.filter(a -> medalsPerAthlete.containsKey(a.getCode()))
+				.flatMap(a -> medalsPerAthlete.get(a.getCode()).stream())
+				.map(Medal::getDiscipline).collect(Collectors.toSet());
+		
+		// establecemos el máximo de la barra de progreso
+		progressBar.setMaximum(disciplines.size());
+		
+		// configuramos el hilo de ejecución para escribir las disciplinas
+		exportThread = new Thread(() -> {
+			System.out.println("Exportando disciplinas...");
+			// abrimos el fichero en el que se van a exportar los datos
+			try (FileWriter writer = new FileWriter(exportFile)) {
+				// utilizamos un iterador para recorrer las disciplinas a exportar
+				Iterator<String> iterator = disciplines.iterator();
+				while (iterator.hasNext() && !Thread.interrupted()) {
+					String discipline = iterator.next();
+                    // escribimos la disciplina y su descripción en el fichero
+					writer.write(discipline + "\n");
+					
+					try {
+						// obtenemos la descripción de la disciplina de la página web
+						// y escribimos todos sus párrafos en el fichero
+						List<String> paragraphs = WebScraper.getDescription(WebScraper.getURL(discipline));
+						for (String paragraph : paragraphs) {
+                            writer.write(paragraph + "\n");
+                        }
+					}
+					catch (WebScraperException e) {
+                        // si hay problemas con la descarga se imprime el mensaje de error
+                        writer.write("No se ha podido obtener la información\n");
+                        
+                        // si la causa ha sido que se ha interrumpido la descarga
+                        if (e.getCause() instanceof InterruptedException) {
+                        	// reestablecemos el flag interrupt() del hilo actual para que el bucle se detenga
+                        	Thread.currentThread().interrupt();
+                        }
+                    }
+					writer.write("\n");
+						
+					// actualizamos la barra de progreso
+					// debemos utilizar SwingUtilities.invokeLater para actualizar la barra
+					// de progreso ya que estamos en un hilo diferente al hilo de Swing
+					SwingUtilities.invokeLater(() -> progressBar.setValue(progressBar.getValue() + 1));
+				}
+				
+				// indicamos si ha sido el usuario el que han cancelado el hilo de exportación
+				// lo sabemos porque todavía existen descripciones a exportar
+				if (iterator.hasNext()) {
+					System.out.println("El hilo de exportación ha sido detenido por el usuario");
+				}
+				
+				// volvemos a hacer invisible el panel inferior
+				SwingUtilities.invokeLater(() -> bottomPanel.setVisible(false));
+			} catch (IOException e) {
+				// mensaje de error si hay problemas con el fichero
+				// se utiliza SwingUtilities.invokeLater para mostrar el mensaje debido a que
+				// estamos en un hilo diferente al hilo de Swing
+				SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "Error al exportar las disciplinas", "Error", JOptionPane.ERROR_MESSAGE));
+			}
+			
+			System.out.println("Terminada la exportación de disciplinas");
+		});
+		
+		exportThread.start(); // iniciamos el thread
+		
+		// hacemos visible el panel inferior
+		bottomPanel.setVisible(true);
 	}
 }
