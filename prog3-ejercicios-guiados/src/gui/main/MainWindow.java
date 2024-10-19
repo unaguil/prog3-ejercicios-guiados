@@ -8,6 +8,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.net.URL;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
@@ -32,6 +33,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -49,6 +51,8 @@ import gui.main.models.MedalsTableModel;
 import gui.main.renderers.AthleteListCellRenderer;
 import gui.main.renderers.DateTableCellRenderer;
 import gui.main.renderers.MetalTableCellRenderer;
+import net.WebScraper;
+import net.WebScraperException;
 
 /**
  * Ventana principal de la aplicación.
@@ -72,23 +76,16 @@ public class MainWindow extends JFrame {
 
 	private Map<Integer, List<Medal>> medalsPerAthlete = Map.of(
 			sampleAthletes.get(0).getCode(), new ArrayList<>(Arrays.asList(
-					new Medal(Metal.SILVER, LocalDate.of(2024, 7, 29), sampleAthletes.get(0), "Discipline 1"),
-					new Medal(Metal.GOLD, LocalDate.of(2024, 7, 30), sampleAthletes.get(0), "Discipline 2"))
+					new Medal(Metal.SILVER, LocalDate.of(2024, 7, 29), sampleAthletes.get(0), "Judo"),
+					new Medal(Metal.GOLD, LocalDate.of(2024, 7, 30), sampleAthletes.get(0), "Cycling road"))
 			),
 			sampleAthletes.get(1).getCode(), new ArrayList<>(Arrays.asList(
-					new Medal(Metal.BRONZE, LocalDate.of(2024, 7, 29), sampleAthletes.get(1), "Discipline 1"),
-					new Medal(Metal.GOLD, LocalDate.of(2024, 8, 2), sampleAthletes.get(1), "Discipline 3"))
+					new Medal(Metal.BRONZE, LocalDate.of(2024, 7, 29), sampleAthletes.get(1), "Hockey"),
+					new Medal(Metal.GOLD, LocalDate.of(2024, 8, 2), sampleAthletes.get(1), "Wrestling"))
 			),
 			sampleAthletes.get(2).getCode(), new ArrayList<>(Arrays.asList(
-					new Medal(Metal.SILVER, LocalDate.of(2024, 8, 5), sampleAthletes.get(2), "Discipline 4"))
+					new Medal(Metal.SILVER, LocalDate.of(2024, 8, 5), sampleAthletes.get(2), "Tennis"))
 			)
-	);
-
-	private Map<String, String> contextualInfo = Map.of(
-			"Discipline 1", "<html> <b>Description of discipline 1</bb> <br> <i>Some additional information</i> </html>",
-			"Discipline 2", "<html> <b>Description of discipline 2</bb> <br> <i>Some additional information</i> </html>",
-			"Discipline 3", "<html> <b>Description of discipline 3</bb> <br> <i>Some additional information</i> </html>",
-			"Discipline 4", "<html> <b>Description of discipline 4</bb> <br> <i>Some additional information</i> </html>"
 	);
 
 	private AthleteListCellRenderer athleteListCellRenderer; // referencia al renderer de la lista de atletas
@@ -353,21 +350,66 @@ public class MainWindow extends JFrame {
                 // unicamente mostramos información contextual si la celda seleccionada
                 // corresponde con la columna de disciplina de la tabla, en caso contrario
                 // mostramos un texto por defecto
-                String info = "<html><i>No hay información disponible</i></html>";
                 if (col == 2) {
-                    // obtenemos el valor de la celda seleccionada
-                    String searchKey = medalsJTable.getValueAt(row, col).toString();
-                    // mostramos la información contextual en el JTextArea
-                    info = contextualInfo.getOrDefault(searchKey, info);
+                	// configuramos el hilo de ejecución para obtener la información
+                	Thread t = new Thread(() -> {
+	                    // obtenemos el valor de la celda seleccionada
+	                    String searchKey = medalsJTable.getValueAt(row, col).toString();
+	                    // obtenemos la información a mostrar en el JTextArea
+	                    try {
+		                    String info = getDisciplineInfo(searchKey);
+		                    
+		                    // como vamos a modificar el JTextArea desde un hilo diferente al hilo
+		                    // de Swing, debemos usar el método invokeLater de la clase SwingUtilities
+		                    SwingUtilities.invokeLater(() -> {
+	                        	// actualizamos el JTextArea con la información contextual
+		                    	contextualInfoEditorPane.setText(info);
+		                    	// situar el cursos en la parte superior del JTextArea
+		                    	contextualInfoEditorPane.setCaretPosition(0);
+		                    });
+	                    } catch (InterruptedException ex) {
+	                    	// está excepción se produce cuando la petición HTTP es interrumpida
+	                    	// con una llamada a Thread.interrupt
+	                    }
+                	});
+                	
+                	// iniciamos el hilo
+                	t.start();
                 }
-                
-                // mostramos la información contextual en el JTextArea
-                contextualInfoEditorPane.setText(info);
             }
 		});
 
 		// añadimos la tabla a un panel de scroll y lo devolvemos
 		return new JScrollPane(medalsJTable);
+	}
+	
+	// método que obtiene la información de la disciplina de la medalla
+	// a partir de la página web de los JJOO de París 2024 y la devuelve
+	// dentro de etiquetas HTML para mostrar un título y una descripción
+	private String getDisciplineInfo(String discipline) throws InterruptedException {
+		String info = "<html><h1>" + discipline + "</h1>";
+		try {
+			// obtenemos la URL a partir del nombre de la disciplina
+			URL url = WebScraper.getURL(discipline);	
+
+			info += "<p>" + String.format("URL: <a href='%s'>%s</a>", url, url) + "</p>";		
+			// se intenta obtener la descripción de la disciplina
+			List<String> paragraphs = WebScraper.getDescription(url);
+			
+			// si la descripción está vacía se añade un mensaje indicando que no hay información
+			if (paragraphs.isEmpty()) {
+				info += "<p>No se ha podido obtener la información</p>";
+			} else {
+				// si hay descripción se añade al texto a mostrar
+				for (String paragraph : paragraphs) {
+					info += "<p>" + paragraph + "</p>";
+				}
+			}
+		} catch (WebScraperException e) {
+			info += "<p>No se ha podido obtener la información</p>";
+		}
+		info += "</html>";
+		return info;
 	}
 
 	// método para crear el menú de la ventana
