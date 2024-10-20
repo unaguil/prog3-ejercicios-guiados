@@ -63,6 +63,7 @@ import gui.main.models.MedalsTableModel;
 import gui.main.renderers.AthleteListCellRenderer;
 import gui.main.renderers.DateTableCellRenderer;
 import gui.main.renderers.MetalTableCellRenderer;
+import net.DescriptionCache;
 import net.WebScraper;
 import net.WebScraperException;
 
@@ -113,8 +114,29 @@ public class MainWindow extends JFrame {
 	private JPanel bottomPanel; // referencia al panel inferior de la ventana
 	private JProgressBar progressBar; // referencia a la barra de progreso	
 	private Thread exportThread; // referencia al hilo de exportación de disciplinas
+	
+	private DescriptionCache descriptionCache; // referencia a la cache de descripciones de disciplinas
 
 	public MainWindow() {
+		// creamos e iniciamos la cache de descripciones de disciplinas
+		descriptionCache = DescriptionCache.getInstance();
+		
+		// vamos a obtener todas los nombres de disciplinas de los atletas
+		// para ir descargando sus descripciones desde la página web en segundo plano
+		Set<URL> allDisciplines = medalsPerAthlete.values().stream()
+			.flatMap(List::stream)
+            .map(m -> {
+				try {
+					return WebScraper.getURL(m.getDiscipline());
+				} catch (WebScraperException e) {
+					throw new RuntimeException(e);
+				}
+			})
+            .collect(Collectors.toSet());
+		
+		descriptionCache.addURLs(allDisciplines);
+		descriptionCache.startDownload();
+		
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE); // comportamiento al cerrar
 		setTitle("JJ.OO. Paris 2024"); // título de la ventana
 		setSize(640, 480); // tamaño inicial
@@ -399,65 +421,49 @@ public class MainWindow extends JFrame {
                 // corresponde con la columna de disciplina de la tabla, en caso contrario
                 // mostramos un texto por defecto
                 if (col == 2) {
-                	// configuramos el hilo de ejecución para obtener la información
-                	Thread t = new Thread(() -> {
-	                    // obtenemos el valor de la celda seleccionada
-	                    String searchKey = medalsJTable.getValueAt(row, col).toString();
-	                    // obtenemos la información a mostrar en el JTextArea
-	                    try {
-		                    String info = getDisciplineInfo(searchKey);
-		                    
-		                    // como vamos a modificar el JTextArea desde un hilo diferente al hilo
-		                    // de Swing, debemos usar el método invokeLater de la clase SwingUtilities
-		                    SwingUtilities.invokeLater(() -> {
-	                        	// actualizamos el JTextArea con la información contextual
+                	// obtenemos el nombre de la disciplina de la celda seleccionada
+                	String discipline = medalsJTable.getValueAt(row, col).toString();
+                	// obtenemos la URL de la disciplina
+                	try {
+	                	URL url = WebScraper.getURL(discipline);
+	                	
+	                	// usamos la cache de descripciones para intentar obtener la descripción
+	                	descriptionCache.getDescriptionAsync(url,
+	            			paragraphs -> {
+	            				// si la descripción se ha podido obtener se llama este callback
+	    						String info = "<html><h1>" + discipline + "</h1>";
+	    						info += "<p>" + String.format("URL: <a href='%s'>%s</a>", url, url) + "</p>";
+	    						for (String paragraph : paragraphs) {
+	    							info += "<p>" + paragraph + "</p>";
+	    						}
+	    						info += "</html>";
+	    						// actualizamos el JTextArea con la información contextual
 		                    	contextualInfoEditorPane.setText(info);
 		                    	// situar el cursos en la parte superior del JTextArea
 		                    	contextualInfoEditorPane.setCaretPosition(0);
-		                    });
-	                    } catch (InterruptedException ex) {
-	                    	// está excepción se produce cuando la petición HTTP es interrumpida
-	                    	// con una llamada a Thread.interrupt
-	                    }
-                	});
-                	
-                	// iniciamos el hilo
-                	t.start();
+	            			},
+	            			error -> {
+	            				// si no se ha podido obtener la descripción se llama este callback
+	            				String info = "<html><h1>" + discipline + "</h1>";
+	            				info += "<p>" + String.format("URL: <a href='%s'>%s</a>", url, url) + "</p>";
+	            				info += "<p>No se ha podido obtener la información</p>";
+	            				info += "</html>";
+	            				// actualizamos el JTextArea con la información contextual
+	                        	contextualInfoEditorPane.setText(info);
+	                        	// situar el cursos en la parte superior del JTextArea
+	                        	contextualInfoEditorPane.setCaretPosition(0);
+	            			},
+	            			5000 // tiempo máximo de espera en milisegundos
+	                	);
+                	} catch (WebScraperException ex) {
+                		System.out.println("Error descargando la información. " + ex.getMessage());
+                	}
                 }
             }
 		});
 
 		// añadimos la tabla a un panel de scroll y lo devolvemos
 		return new JScrollPane(medalsJTable);
-	}
-	
-	// método que obtiene la información de la disciplina de la medalla
-	// a partir de la página web de los JJOO de París 2024 y la devuelve
-	// dentro de etiquetas HTML para mostrar un título y una descripción
-	private String getDisciplineInfo(String discipline) throws InterruptedException {
-		String info = "<html><h1>" + discipline + "</h1>";
-		try {
-			// obtenemos la URL a partir del nombre de la disciplina
-			URL url = WebScraper.getURL(discipline);	
-
-			info += "<p>" + String.format("URL: <a href='%s'>%s</a>", url, url) + "</p>";		
-			// se intenta obtener la descripción de la disciplina
-			List<String> paragraphs = WebScraper.getDescription(url);
-			
-			// si la descripción está vacía se añade un mensaje indicando que no hay información
-			if (paragraphs.isEmpty()) {
-				info += "<p>No se ha podido obtener la información</p>";
-			} else {
-				// si hay descripción se añade al texto a mostrar
-				for (String paragraph : paragraphs) {
-					info += "<p>" + paragraph + "</p>";
-				}
-			}
-		} catch (WebScraperException e) {
-			info += "<p>No se ha podido obtener la información</p>";
-		}
-		info += "</html>";
-		return info;
 	}
 
 	// método para crear el menú de la ventana
@@ -559,6 +565,9 @@ public class MainWindow extends JFrame {
 				exportThread = null;
 			}
 			
+			// detenemos también la descarga de descripciones de disciplinas
+			descriptionCache.stopDownload();
+			
 			// el usuario está seguro que desea salir
 			System.exit(0); // terminamos el programa
 		}
@@ -606,12 +615,9 @@ public class MainWindow extends JFrame {
 					catch (WebScraperException e) {
                         // si hay problemas con la descarga se imprime el mensaje de error
                         writer.write("No se ha podido obtener la información\n");
-                        
-                        // si la causa ha sido que se ha interrumpido la descarga
-                        if (e.getCause() instanceof InterruptedException) {
-                        	// reestablecemos el flag interrupt() del hilo actual para que el bucle se detenga
-                        	Thread.currentThread().interrupt();
-                        }
+                    } catch (InterruptedException e) {
+                		// reestablecemos el flag interrupt() del hilo actual para que el bucle se detenga
+                    	Thread.currentThread().interrupt();
                     }
 					writer.write("\n");
 						
